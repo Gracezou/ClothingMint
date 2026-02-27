@@ -269,6 +269,7 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Info.plist";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Clothing Mint 需要蓝牙权限以连接标签打印机";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Clothing Mint 需要相机权限以拍摄服装照片";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Clothing Mint 需要相册权限以选择服装图片";
@@ -304,6 +305,7 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Info.plist";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Clothing Mint 需要蓝牙权限以连接标签打印机";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Clothing Mint 需要相机权限以拍摄服装照片";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Clothing Mint 需要相册权限以选择服装图片";

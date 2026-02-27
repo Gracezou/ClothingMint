@@ -25,7 +25,7 @@ struct MainTabView: View {
                     .allowsHitTesting(selectedTab == 0)
 
                 // Tab 1: 库存总览
-                InventoryPlaceholderView()
+                InventoryOverviewView()
                     .opacity(selectedTab == 1 ? 1 : 0)
                     .allowsHitTesting(selectedTab == 1)
             }
@@ -85,31 +85,6 @@ struct StatisticsPlaceholderView: View {
                     }
                 }
             }
-        }
-    }
-}
-
-/// 库存页占位
-struct InventoryPlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.pageBackground.ignoresSafeArea()
-
-                VStack(spacing: 16) {
-                    Image(systemName: "archivebox.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Color.mintPrimary)
-
-                    Text("库存总览")
-                        .font(.title2.bold())
-
-                    Text("将在第 4 批实现")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("库存")
         }
     }
 }
