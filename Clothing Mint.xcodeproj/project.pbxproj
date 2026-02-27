@@ -65,6 +65,8 @@
 			);
 			name = "Clothing Mint";
 			packageProductDependencies = (
+				DE000001AAAA00010099E96F /* Supabase */,
+				DE000002AAAA00010099E96F /* Kingfisher */,
 			);
 			productName = "Clothing Mint";
 			productReference = DECB5ABD2F518BDB0099E96F /* Clothing Mint.app */;
@@ -96,6 +98,10 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DECB5ABE2F518BDB0099E96F /* Products */;
+			packageReferences = (
+				DE000003AAAA00010099E96F /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				DE000004AAAA00010099E96F /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -256,6 +262,9 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "DailyMint 需要蓝牙权限以连接标签打印机";
+				INFOPLIST_KEY_NSCameraUsageDescription = "DailyMint 需要相机权限以拍摄服装照片";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DailyMint 需要相册权限以选择服装图片";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +297,9 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "DailyMint 需要蓝牙权限以连接标签打印机";
+				INFOPLIST_KEY_NSCameraUsageDescription = "DailyMint 需要相机权限以拍摄服装照片";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DailyMint 需要相册权限以选择服装图片";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +344,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DE000003AAAA00010099E96F /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		DE000004AAAA00010099E96F /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DE000001AAAA00010099E96F /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE000003AAAA00010099E96F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		DE000002AAAA00010099E96F /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE000004AAAA00010099E96F /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DECB5AB52F518BDB0099E96F /* Project object */;
 }

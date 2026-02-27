@@ -2,23 +2,37 @@
 //  ContentView.swift
 //  Clothing Mint
 //
-//  Created by zhaoshian on 2026/2/27.
+//  根视图，根据认证状态切换页面
 //
 
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(AppState.self) private var appState
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        ZStack {
+            // 主题色渐变背景
+            GradientBackground()
+
+            VStack(spacing: 24) {
+                Image(systemName: "tshirt.fill")
+                    .font(.system(size: 72))
+                    .foregroundStyle(.white)
+
+                Text("DailyMint")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.white)
+
+                Text("智能服装库存管理")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
         }
-        .padding()
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppState())
 }
