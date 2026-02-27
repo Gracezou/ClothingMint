@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  Clothing Mint
 //
-//  主页面容器，管理 Tab 切换和 FAB 操作
+//  主页面容器，管理 Tab 切换、FAB 操作和 Realtime 同步
 //
 
 import SwiftUI
@@ -12,6 +12,7 @@ struct MainTabView: View {
     @Environment(AppState.self) private var appState
     @State private var selectedTab = 0
     @State private var showCreateClothing = false
+    @State private var realtimeService = RealtimeService()
 
     var body: some View {
         @Bindable var state = appState
@@ -29,7 +30,7 @@ struct MainTabView: View {
                     .opacity(selectedTab == 1 ? 1 : 0)
                     .allowsHitTesting(selectedTab == 1)
             }
-            .padding(.bottom, 50) // 给 Tab Bar 留空间
+            .padding(.bottom, 50)
 
             // 底部弧形导航栏
             ArcTabBar(selectedTab: $selectedTab) {
@@ -41,7 +42,21 @@ struct MainTabView: View {
             ClothingCreateView()
                 .environment(appState)
         }
+        .task {
+            // 启动 Realtime 监听
+            realtimeService.onDataChanged = {
+                // 触发通知，让各页面自行刷新
+                NotificationCenter.default.post(name: .clothingDataChanged, object: nil)
+            }
+            await realtimeService.startListening()
+        }
     }
+}
+
+// MARK: - 数据变更通知
+
+extension Notification.Name {
+    static let clothingDataChanged = Notification.Name("clothingDataChanged")
 }
 
 #Preview {

@@ -24,4 +24,7 @@ final class AppState {
 
     /// 是否显示新建服装表单
     var showCreateClothing = false
+
+    /// Deep Link 路由（设置后由主视图消费并清空）
+    var deepLinkRoute: AppRoute?
 }

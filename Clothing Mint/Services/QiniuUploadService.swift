@@ -81,8 +81,22 @@ struct QiniuUploadService {
         // 获取 Token
         let token = try await fetchToken()
 
-        // 压缩图片为 JPEG
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        // 缩放 + 压缩图片（限制最长边 1200px，HEIC 优先）
+        let resizedImage = image.resizedToMaxDimension(1200)
+        let imageData: Data
+        let mimeType: String
+        let fileExtension: String
+
+        // 优先 HEIC（比 JPEG 小 40-50%），不支持时回退 JPEG
+        if let heicData = resizedImage.heicData(compressionQuality: 0.8) {
+            imageData = heicData
+            mimeType = "image/heic"
+            fileExtension = "heic"
+        } else if let jpegData = resizedImage.jpegData(compressionQuality: 0.7) {
+            imageData = jpegData
+            mimeType = "image/jpeg"
+            fileExtension = "jpg"
+        } else {
             throw QiniuUploadError.imageCompressionFailed
         }
 
@@ -98,7 +112,7 @@ struct QiniuUploadService {
         // key 字段
         body.appendMultipartField(name: "key", value: fullKey, boundary: boundary)
         // file 字段
-        body.appendMultipartFile(name: "file", filename: "\(key).jpg", mimeType: "image/jpeg", data: imageData, boundary: boundary)
+        body.appendMultipartFile(name: "file", filename: "\(key).\(fileExtension)", mimeType: mimeType, data: imageData, boundary: boundary)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         var request = URLRequest(url: AppConstants.qiniuUploadURL)

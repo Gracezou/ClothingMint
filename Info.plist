@@ -20,5 +20,16 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>clothingmint</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.clothingmint.app</string>
+		</dict>
+	</array>
 </dict>
 </plist>

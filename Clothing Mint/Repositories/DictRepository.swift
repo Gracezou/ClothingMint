@@ -24,10 +24,13 @@ struct DictRepository {
             .value
     }
 
-    /// 批量获取多个分类（通过存储过程）
+    /// 批量获取多个分类
     func getBatchCategories(_ categories: [String]) async throws -> [ClothingDictItem] {
         try await client
-            .rpc("get_clothing_dict_by_categories", params: ["categories": categories])
+            .from(table)
+            .select()
+            .in("category", values: categories)
+            .order("sort_no", ascending: true)
             .execute()
             .value
     }

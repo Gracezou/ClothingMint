@@ -12,7 +12,9 @@ struct InventoryOverviewView: View {
     @State private var viewModel = InventoryViewModel()
     @State private var scrollOffset: CGFloat = 0
     @State private var showScrollToTop = false
+    @State private var navigationPath = NavigationPath()
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(AppState.self) private var appState
 
     /// 瀑布流列数：iPad 3 列，iPhone 2 列
     private var columnCount: Int {
@@ -20,7 +22,7 @@ struct InventoryOverviewView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -51,11 +53,20 @@ struct InventoryOverviewView: View {
                                     ForEach(viewModel.clothingItems) { item in
                                         NavigationLink(value: AppRoute.clothingDetail(id: item.id)) {
                                             ClothingCard(item: item)
+                                                .task {
+                                                    await viewModel.loadMoreIfNeeded(currentItem: item)
+                                                }
                                         }
                                         .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.horizontal, 16)
+
+                                // 加载更多指示器
+                                if viewModel.isLoadingMore {
+                                    ProgressView()
+                                        .padding()
+                                }
                             }
 
                             Spacer(minLength: 80)
@@ -110,6 +121,12 @@ struct InventoryOverviewView: View {
             .task {
                 if viewModel.clothingItems.isEmpty {
                     await viewModel.loadInitialData()
+                }
+            }
+            .onChange(of: appState.deepLinkRoute) { _, route in
+                if let route {
+                    navigationPath.append(route)
+                    appState.deepLinkRoute = nil
                 }
             }
         }
