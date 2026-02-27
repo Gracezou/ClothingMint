@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DECB5BBB2F51987B0099E96F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DE000001AAAA00010099E96F /* Supabase */; };
+		DECB5BBC2F51987B0099E96F /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = DE000002AAAA00010099E96F /* Kingfisher */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		DECB5ABD2F518BDB0099E96F /* Clothing Mint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Clothing Mint.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DECB5BBC2F51987B0099E96F /* Kingfisher in Frameworks */,
+				DECB5BBB2F51987B0099E96F /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,12 +103,12 @@
 			);
 			mainGroup = DECB5AB42F518BDB0099E96F;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
-			productRefGroup = DECB5ABE2F518BDB0099E96F /* Products */;
 			packageReferences = (
 				DE000003AAAA00010099E96F /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				DE000004AAAA00010099E96F /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = DECB5ABE2F518BDB0099E96F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -262,9 +269,9 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "DailyMint 需要蓝牙权限以连接标签打印机";
-				INFOPLIST_KEY_NSCameraUsageDescription = "DailyMint 需要相机权限以拍摄服装照片";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DailyMint 需要相册权限以选择服装图片";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Clothing Mint 需要蓝牙权限以连接标签打印机";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Clothing Mint 需要相机权限以拍摄服装照片";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Clothing Mint 需要相册权限以选择服装图片";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -297,9 +304,9 @@
 				DEVELOPMENT_TEAM = 947EE97Q2S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "DailyMint 需要蓝牙权限以连接标签打印机";
-				INFOPLIST_KEY_NSCameraUsageDescription = "DailyMint 需要相机权限以拍摄服装照片";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DailyMint 需要相册权限以选择服装图片";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Clothing Mint 需要蓝牙权限以连接标签打印机";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Clothing Mint 需要相机权限以拍摄服装照片";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Clothing Mint 需要相册权限以选择服装图片";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

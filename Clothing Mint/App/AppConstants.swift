@@ -2,7 +2,7 @@
 //  AppConstants.swift
 //  Clothing Mint
 //
-//  DailyMint 全局配置常量
+//  Clothing Mint 全局配置常量
 //
 
 import Foundation

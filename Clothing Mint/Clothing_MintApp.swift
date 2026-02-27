@@ -2,7 +2,7 @@
 //  Clothing_MintApp.swift
 //  Clothing Mint
 //
-//  DailyMint 应用入口，注入全局状态
+//  Clothing Mint 应用入口，注入全局状态
 //
 
 import SwiftUI
