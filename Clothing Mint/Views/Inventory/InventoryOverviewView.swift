@@ -101,8 +101,7 @@ struct InventoryOverviewView: View {
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
                 case .clothingDetail(let id):
-                    // 第 6 批替换为 ClothingDetailView
-                    Text("详情页: \(id)")
+                    ClothingDetailView(clothingId: id)
                 default:
                     EmptyView()
                 }
