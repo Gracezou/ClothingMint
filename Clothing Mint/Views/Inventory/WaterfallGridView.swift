@@ -25,7 +25,7 @@ struct WaterfallLayout: Layout {
 
         for subview in subviews {
             // 放入最矮的列
-            let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })!.offset
+            guard let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })?.offset else { continue }
             let size = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil))
 
             let x = bounds.minX + CGFloat(columnIndex) * (columnWidth + spacing)
@@ -42,7 +42,7 @@ struct WaterfallLayout: Layout {
         var columnHeights = Array(repeating: CGFloat(0), count: columns)
 
         for subview in subviews {
-            let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })!.offset
+            guard let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })?.offset else { continue }
             let size = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil))
             columnHeights[columnIndex] += size.height + spacing
         }

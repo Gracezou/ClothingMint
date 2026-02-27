@@ -46,6 +46,8 @@ struct ClothingCreateView: View {
                         saveButton
                     }
                     .padding(16)
+                    .frame(maxWidth: 600) // iPad 限宽
+                    .frame(maxWidth: .infinity) // 居中
                 }
             }
             .navigationTitle("新增服装")

@@ -33,22 +33,12 @@ struct ClothingDetailView: View {
             } else if let clothing = viewModel.clothing {
                 ScrollView {
                     VStack(spacing: 16) {
-                        // 图片
                         photoSection(clothing)
-
-                        // 条码
                         barcodeSection(clothing)
-
-                        // 基本信息
                         infoSection(clothing)
-
-                        // 状态信息
                         statusSection(clothing)
-
-                        // 闲鱼链接
                         xianyuSection(clothing)
 
-                        // 操作按钮
                         if !clothing.isSold {
                             actionSection(clothing)
                         }
@@ -56,6 +46,8 @@ struct ClothingDetailView: View {
                         Spacer(minLength: 40)
                     }
                     .padding(16)
+                    .frame(maxWidth: 600)
+                    .frame(maxWidth: .infinity)
                 }
             } else {
                 VStack(spacing: 12) {
@@ -67,7 +59,6 @@ struct ClothingDetailView: View {
                 }
             }
 
-            // 更新遮罩
             if viewModel.isUpdating {
                 LoadingOverlay()
             }
@@ -75,7 +66,7 @@ struct ClothingDetailView: View {
         .navigationTitle("服装详情")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if let clothing = viewModel.clothing {
+            if viewModel.clothing != nil {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showPrinter = true
@@ -135,7 +126,6 @@ struct ClothingDetailView: View {
                 .frame(height: 200)
             }
 
-            // 状态角标
             VStack(spacing: 6) {
                 if clothing.isSold {
                     statusChip(text: "已售出", color: .orange)
@@ -268,7 +258,6 @@ struct ClothingDetailView: View {
 
                 Divider().padding(.leading, 16)
 
-                // 编辑按钮
                 Button {
                     viewModel.xianyuLinkInput = clothing.xianyuLink ?? ""
                     viewModel.showLinkEditor = true
@@ -293,7 +282,6 @@ struct ClothingDetailView: View {
 
     private func actionSection(_ clothing: ClothingInventory) -> some View {
         VStack(spacing: 12) {
-            // 标记售出
             Button {
                 showSoldConfirm = true
             } label: {
@@ -311,7 +299,6 @@ struct ClothingDetailView: View {
                 )
             }
 
-            // 标记退货
             if !clothing.isReturned {
                 Button {
                     showReturnConfirm = true

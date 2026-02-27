@@ -69,6 +69,13 @@ struct TabItem {
 struct ArcTabBar: View {
     @Binding var selectedTab: Int
     let onFABTapped: () -> Void
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPad 上使用更大的尺寸
+    private var isRegular: Bool { sizeClass == .regular }
+    private var fabSize: CGFloat { isRegular ? 64 : 56 }
+    private var fabOffset: CGFloat { isRegular ? -30 : -26 }
+    private var horizontalPadding: CGFloat { isRegular ? 80 : 32 }
 
     /// Tab 定义
     private let tabs: [TabItem] = [
@@ -79,27 +86,23 @@ struct ArcTabBar: View {
     var body: some View {
         ZStack(alignment: .top) {
             // 弧形背景
-            ArcTabBarShape()
+            ArcTabBarShape(notchRadius: isRegular ? 40 : 35)
                 .fill(Color.cardBackground)
                 .shadow(color: .black.opacity(0.1), radius: 8, y: -2)
-                .frame(height: 60)
+                .frame(height: isRegular ? 68 : 60)
 
             // Tab 按钮
             HStack {
-                // 左侧 Tab（统计）
                 tabButton(index: 0)
-
                 Spacer()
-
-                // 右侧 Tab（库存）
                 tabButton(index: 1)
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, horizontalPadding)
             .padding(.top, 8)
 
             // 中心 FAB 按钮
             fabButton
-                .offset(y: -26)
+                .offset(y: fabOffset)
         }
     }
 
@@ -114,16 +117,16 @@ struct ArcTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: selectedTab == index ? tabs[index].selectedIcon : tabs[index].icon)
-                    .font(.system(size: 22))
+                    .font(.system(size: isRegular ? 24 : 22))
                     .scaleEffect(selectedTab == index ? 1.1 : 1.0)
 
                 Text(tabs[index].title)
-                    .font(.caption2)
+                    .font(isRegular ? .caption : .caption2)
             }
             .foregroundStyle(
                 selectedTab == index ? Color.mintPrimary : .secondary
             )
-            .frame(width: 64)
+            .frame(width: isRegular ? 80 : 64)
         }
     }
 
@@ -137,7 +140,7 @@ struct ArcTabBar: View {
             Image(systemName: "plus")
                 .font(.title2.bold())
                 .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
+                .frame(width: fabSize, height: fabSize)
                 .background(
                     Circle()
                         .fill(Color.mintGradient)
