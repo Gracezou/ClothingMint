@@ -16,6 +16,7 @@ struct ClothingDetailView: View {
     /// 确认操作弹窗
     @State private var showSoldConfirm = false
     @State private var showReturnConfirm = false
+    @State private var showPrinter = false
 
     init(clothingId: String) {
         self.clothingId = clothingId
@@ -73,6 +74,23 @@ struct ClothingDetailView: View {
         }
         .navigationTitle("服装详情")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let clothing = viewModel.clothing {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showPrinter = true
+                    } label: {
+                        Image(systemName: "printer.fill")
+                            .foregroundStyle(Color.mintPrimary)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showPrinter) {
+            if let clothing = viewModel.clothing {
+                PrinterScanView(clothing: clothing)
+            }
+        }
         .toast(isPresented: $viewModel.showToast, type: viewModel.toastType, message: viewModel.toastMessage)
         .alert("确认售出", isPresented: $showSoldConfirm) {
             Button("确认", role: .destructive) {
