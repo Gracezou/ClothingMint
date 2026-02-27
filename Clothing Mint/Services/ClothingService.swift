@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Supabase
 
 /// 服装库存服务
 struct ClothingService {
@@ -50,6 +51,20 @@ struct ClothingService {
     func search(keyword: String) async throws -> [ClothingInventory] {
         try await NetworkRetry.execute {
             try await repo.search(keyword: keyword)
+        }
+    }
+
+    /// 创建服装记录
+    func create(_ clothing: ClothingInventory) async throws {
+        try await NetworkRetry.execute {
+            try await repo.create(clothing)
+        }
+    }
+
+    /// 更新服装记录
+    func update(id: String, data: [String: AnyJSON]) async throws {
+        try await NetworkRetry.execute {
+            try await repo.update(id: id, data: data)
         }
     }
 }

@@ -38,8 +38,8 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard)
         .sheet(isPresented: $showCreateClothing) {
-            // 新建服装表单（第 5 批替换为 ClothingCreateView）
-            CreateClothingPlaceholderView()
+            ClothingCreateView()
+                .environment(appState)
         }
     }
 }
@@ -83,38 +83,6 @@ struct StatisticsPlaceholderView: View {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                             .foregroundStyle(.secondary)
                     }
-                }
-            }
-        }
-    }
-}
-
-/// 新建服装占位
-struct CreateClothingPlaceholderView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.pageBackground.ignoresSafeArea()
-
-                VStack(spacing: 16) {
-                    Image(systemName: "tshirt.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Color.mintPrimary)
-
-                    Text("新增服装")
-                        .font(.title2.bold())
-
-                    Text("将在第 5 批实现")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("新增服装")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
                 }
             }
         }
