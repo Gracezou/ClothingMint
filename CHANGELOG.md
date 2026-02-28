@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2] - 2026-02-28
+
+### 变更
+
+- 将 Deployment Target 从 iOS 26 降低至 iOS 18，扩大设备兼容范围
+- 更新 README 和文档中的 iOS 版本说明
+- 版本号升级至 1.0.2 (Build 3)
+
 ## [1.0.0] - 2025-02-28
 
 ### 功能
@@ -18,7 +26,7 @@
 
 ### 技术栈
 
-- Swift 6 + SwiftUI (iOS 26+)
+- Swift 6 + SwiftUI (iOS 18+)
 - @Observable 状态管理
 - Supabase (Auth + PostgREST + Realtime)
 - Kingfisher 8.x 图片缓存
