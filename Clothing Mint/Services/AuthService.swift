@@ -36,8 +36,23 @@ struct AuthService {
         try? await client.auth.session.user.id.uuidString
     }
 
-    /// 检查是否已登录
+    /// 检查是否已登录（含 session 过期检查）
     func isLoggedIn() async -> Bool {
-        await getCurrentUserId() != nil
+        guard let session = try? await client.auth.session else {
+            return false
+        }
+        // emitLocalSessionAsInitialSession 会返回本地缓存的 session
+        // 需要检查是否过期，过期则尝试刷新
+        if session.isExpired {
+            AppLogger.info("会话已过期，尝试刷新...")
+            do {
+                _ = try await client.auth.refreshSession()
+                return true
+            } catch {
+                AppLogger.error("刷新会话失败: \(error.localizedDescription)")
+                return false
+            }
+        }
+        return true
     }
 }

@@ -13,6 +13,11 @@ enum SupabaseManager {
     /// 共享的 Supabase 客户端实例
     static let client = SupabaseClient(
         supabaseURL: AppConstants.supabaseURL,
-        supabaseKey: AppConstants.supabaseAnonKey
+        supabaseKey: AppConstants.supabaseAnonKey,
+        options: SupabaseClientOptions(
+            auth: .init(
+                emitLocalSessionAsInitialSession: true
+            )
+        )
     )
 }
