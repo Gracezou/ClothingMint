@@ -80,3 +80,17 @@ jobs:
           name: ClothingMint-${{ github.ref_name }}
           path: ${{ runner.temp }}/export/*.ipa
           if-no-files-found: warn
+
+      - name: Upload IPA to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 等待 Release 存在（你手动创建或已存在），最多等 5 分钟
+          for i in $(seq 1 30); do
+            gh release view "${{ github.ref_name }}" &>/dev/null && break
+            echo "Waiting for release ${{ github.ref_name }} to be created... ($i/30)"
+            sleep 10
+          done
+          gh release upload "${{ github.ref_name }}" \
+            ${{ runner.temp }}/export/*.ipa --clobber
