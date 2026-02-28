@@ -32,6 +32,13 @@ enum DateFormatters {
         return formatter
     }()
 
+    /// 紧凑日期格式：yyyyMMdd（七牛上传路径用）
+    static let compactDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter
+    }()
+
     /// ISO 8601 格式（Supabase 通信用）
     static let iso8601: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()

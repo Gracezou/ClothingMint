@@ -15,17 +15,21 @@ struct CachedAsyncImage: View {
 
     var body: some View {
         if let url, let imageURL = URL(string: url) {
-            KFImage(imageURL)
-                .resizable()
-                .placeholder {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.1))
-                        .overlay {
-                            ProgressView()
+            Color.clear
+                .overlay {
+                    KFImage(imageURL)
+                        .resizable()
+                        .placeholder {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.1))
+                                .overlay {
+                                    ProgressView()
+                                }
                         }
+                        .fade(duration: 0.25)
+                        .scaledToFill()
                 }
-                .fade(duration: 0.25)
-                .scaledToFill()
+                .clipped()
         } else {
             Rectangle()
                 .fill(Color.gray.opacity(0.1))

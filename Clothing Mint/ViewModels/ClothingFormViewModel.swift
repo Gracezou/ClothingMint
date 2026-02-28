@@ -50,6 +50,7 @@ import SwiftUI
     // MARK: - 加载状态
 
     var isLoadingOptions = false
+    var loadOptionsFailed = false
 
     // MARK: - 依赖
 
@@ -67,14 +68,18 @@ import SwiftUI
 
     func loadOptions() async {
         isLoadingOptions = true
+        loadOptionsFailed = false
         do {
-            let dict = try await dictService.getBatchCategories(["type", "size", "color", "location"])
-            typeOptions = dict["type"]?.map(\.name).sorted() ?? []
+            let dict = try await dictService.getBatchCategories(["clothing_type", "size", "color", "location"])
+            typeOptions = dict["clothing_type"]?.map(\.name).sorted() ?? []
             sizeOptions = dict["size"]?.map(\.name) ?? []
             colorOptions = dict["color"]?.map(\.name).sorted() ?? []
             locationOptions = dict["location"]?.map(\.name).sorted() ?? []
+            AppLogger.info("加载选项成功: type=\(typeOptions.count), size=\(sizeOptions.count), color=\(colorOptions.count), location=\(locationOptions.count)")
         } catch {
+            loadOptionsFailed = true
             showError("加载选项失败: \(error.localizedDescription)")
+            AppLogger.error("加载选项失败: \(error)")
         }
         isLoadingOptions = false
     }
@@ -88,17 +93,16 @@ import SwiftUI
         uploadProgress = 0
 
         do {
-            let key = "\(code)_\(Int(Date().timeIntervalSince1970)).jpg"
-            let photoKey = try await uploadService.upload(image: image, key: key) { [weak self] progress in
+            let url = try await uploadService.upload(image: image) { [weak self] progress in
                 Task { @MainActor in
                     self?.uploadProgress = progress
                 }
             }
-            uploadedPhotoKey = photoKey
+            uploadedPhotoKey = url
             uploadProgress = 1.0
             showSuccess("图片上传成功")
         } catch {
-            showError("图片上传失败: \(error.localizedDescription)")
+            showError("上传失败: \(error.localizedDescription)")
             uploadProgress = 0
         }
         isUploading = false
@@ -109,12 +113,12 @@ import SwiftUI
     func save(userId: String?) async {
         guard validate() else { return }
 
+        isSaving = true
+
         // 如果有图片但未上传，先尝试上传（失败不阻塞保存）
         if selectedImage != nil && uploadedPhotoKey == nil {
             await uploadImage()
         }
-
-        isSaving = true
 
         let now = DateFormatters.iso8601.string(from: .now)
         let stockIn = DateFormatters.displayDate.string(from: stockInDate) + "T00:00:00+08:00"

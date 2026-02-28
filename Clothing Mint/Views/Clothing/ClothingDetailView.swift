@@ -17,6 +17,7 @@ struct ClothingDetailView: View {
     @State private var showSoldConfirm = false
     @State private var showReturnConfirm = false
     @State private var showPrinter = false
+    @State private var showFullImage = false
 
     init(clothingId: String) {
         self.clothingId = clothingId
@@ -82,6 +83,11 @@ struct ClothingDetailView: View {
                 PrinterScanView(clothing: clothing)
             }
         }
+        .fullScreenCover(isPresented: $showFullImage) {
+            if let url = viewModel.clothing?.fullPhotoUrl {
+                FullImageViewer(url: url)
+            }
+        }
         .toast(isPresented: $viewModel.showToast, type: viewModel.toastType, message: viewModel.toastMessage)
         .alert("确认售出", isPresented: $showSoldConfirm) {
             Button("确认", role: .destructive) {
@@ -111,11 +117,12 @@ struct ClothingDetailView: View {
 
     private func photoSection(_ clothing: ClothingInventory) -> some View {
         ZStack(alignment: .topTrailing) {
-            if let url = clothing.fullPhotoUrl {
+            if let url = clothing.detailImageUrl {
                 CachedAsyncImage(url: url, placeholder: "tshirt")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 300)
-                    .clipped()
+                    .frame(height: 350)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showFullImage = true }
             } else {
                 ZStack {
                     Color.cardBackground

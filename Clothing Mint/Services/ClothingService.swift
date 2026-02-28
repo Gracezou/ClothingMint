@@ -26,6 +26,13 @@ struct ClothingService {
         }
     }
 
+    /// 按类型获取
+    func getByType(_ type: String) async throws -> [ClothingInventory] {
+        try await NetworkRetry.execute {
+            try await repo.getByType(type)
+        }
+    }
+
     /// 按位置 + 类型获取
     func getByLocationAndType(location: String, type: String) async throws -> [ClothingInventory] {
         try await NetworkRetry.execute {

@@ -60,10 +60,16 @@ struct ClothingInventory: Codable, Identifiable, Hashable, Sendable {
         return baseUrl
     }
 
-    /// 列表缩略图 URL（七牛 WebP 压缩）
+    /// 列表缩略图 URL（七牛 WebP 300px 宽）
     var thumbnailUrl: String? {
         guard let base = fullPhotoUrl else { return nil }
-        return "\(base)?imageMogr2/format/webp/quality/85"
+        return "\(base)?imageView2/2/w/300/format/webp/q/75"
+    }
+
+    /// 详情页图片 URL（七牛 WebP 600px 宽）
+    var detailImageUrl: String? {
+        guard let base = fullPhotoUrl else { return nil }
+        return "\(base)?imageView2/2/w/600/format/webp/q/75"
     }
 
     /// 格式化的入库日期

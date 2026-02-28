@@ -6,10 +6,15 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 @main
 struct Clothing_MintApp: App {
     @State private var appState = AppState()
+
+    init() {
+        configureKingfisher()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -35,5 +40,16 @@ struct Clothing_MintApp: App {
         default:
             AppLogger.debug("未知 Deep Link: \(url)")
         }
+    }
+
+    /// 配置 Kingfisher 图片缓存策略
+    private func configureKingfisher() {
+        let cache = ImageCache.default
+        // 磁盘缓存限制 200MB
+        cache.diskStorage.config.sizeLimit = 200 * 1024 * 1024
+        // 磁盘缓存过期时间 7 天
+        cache.diskStorage.config.expiration = .days(7)
+        // 内存缓存限制 100MB
+        cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024
     }
 }

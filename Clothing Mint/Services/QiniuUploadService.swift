@@ -2,20 +2,38 @@
 //  QiniuUploadService.swift
 //  Clothing Mint
 //
-//  七牛云图片上传服务，支持进度回调
+//  七牛云图片上传服务，支持 Token 缓存、进度回调、重试和超时
 //
 
 import Foundation
 import UIKit
 
 /// 七牛云上传服务
-struct QiniuUploadService {
+final class QiniuUploadService {
 
     /// 上传进度回调类型
     typealias ProgressHandler = @Sendable (Double) -> Void
 
-    /// 获取上传 Token
+    /// 单次上传超时时间（秒）
+    private static let uploadTimeout: TimeInterval = 60
+
+    /// 最大重试次数
+    private static let maxRetries = 3
+
+    // MARK: - Token 缓存
+
+    private var cachedToken: String?
+    private var tokenExpireTime: Date?
+
+    /// 获取上传 Token（有缓存则复用，过期后重新获取）
     func fetchToken() async throws -> String {
+        // 检查缓存是否有效（提前 5 分钟视为过期）
+        if let token = cachedToken, let expireTime = tokenExpireTime,
+           Date.now < expireTime.addingTimeInterval(-5 * 60) {
+            AppLogger.debug("使用缓存 Token")
+            return token
+        }
+
         var request = URLRequest(url: AppConstants.qiniuTokenURL)
         request.timeoutInterval = AppConstants.requestTimeout
         request.httpMethod = "GET"
@@ -44,18 +62,18 @@ struct QiniuUploadService {
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             // 格式1: {"token": "xxx"}
             if let token = json["token"] as? String {
-                AppLogger.info("获取 Token 成功（直接格式）")
+                cacheToken(token)
                 return token
             }
             // 格式2: {"data": {"token": "xxx"}}
             if let dataObj = json["data"] as? [String: Any],
                let token = dataObj["token"] as? String {
-                AppLogger.info("获取 Token 成功（data 嵌套格式）")
+                cacheToken(token)
                 return token
             }
             // 格式3: {"data": "token_string"}
             if let token = json["data"] as? String {
-                AppLogger.info("获取 Token 成功（data 字符串格式）")
+                cacheToken(token)
                 return token
             }
         }
@@ -63,7 +81,7 @@ struct QiniuUploadService {
         // 如果响应就是纯文本 token
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty && !trimmed.hasPrefix("{") {
-            AppLogger.info("获取 Token 成功（纯文本格式）")
+            cacheToken(trimmed)
             return trimmed
         }
 
@@ -71,56 +89,117 @@ struct QiniuUploadService {
         throw QiniuUploadError.tokenFetchFailed
     }
 
-    /// 上传图片到七牛云
+    private func cacheToken(_ token: String) {
+        cachedToken = token
+        // 七牛 Token 默认有效期 1 小时，缓存 55 分钟
+        tokenExpireTime = Date.now.addingTimeInterval(AppConstants.qiniuTokenExpiry)
+        AppLogger.info("Token 已缓存，有效期至 \(tokenExpireTime!)")
+    }
+
+    /// 清除缓存的 Token（上传失败时可调用以强制刷新）
+    func invalidateToken() {
+        cachedToken = nil
+        tokenExpireTime = nil
+    }
+
+    // MARK: - 上传
+
+    /// 上传图片到七牛云（带重试和超时）
     /// - Parameters:
     ///   - image: 要上传的图片
-    ///   - key: 存储 key（不含前缀，会自动拼接）
     ///   - progress: 上传进度回调（0.0 ~ 1.0）
-    /// - Returns: 上传后的文件 key
-    func upload(image: UIImage, key: String, progress: ProgressHandler? = nil) async throws -> String {
-        // 获取 Token
-        let token = try await fetchToken()
+    /// - Returns: 上传后的完整图片 URL
+    func upload(image: UIImage, progress: ProgressHandler? = nil) async throws -> String {
+        AppLogger.info("开始上传图片")
 
-        // 缩放 + 压缩图片（限制最长边 1200px，HEIC 优先）
-        let resizedImage = image.resizedToMaxDimension(1200)
-        let imageData: Data
-        let mimeType: String
-        let fileExtension: String
+        // 生成 key: prefix/yyyyMMdd/uuid
+        let datePart = DateFormatters.compactDate.string(from: .now)
+        let fullKey = "\(AppConstants.qiniuKeyPrefix)/\(datePart)/\(UUID().uuidString)"
+        AppLogger.debug("生成的 key: \(fullKey)")
 
-        // 优先 HEIC（比 JPEG 小 40-50%），不支持时回退 JPEG
-        if let heicData = resizedImage.heicData(compressionQuality: 0.8) {
-            imageData = heicData
-            mimeType = "image/heic"
-            fileExtension = "heic"
-        } else if let jpegData = resizedImage.jpegData(compressionQuality: 0.7) {
-            imageData = jpegData
-            mimeType = "image/jpeg"
-            fileExtension = "jpg"
-        } else {
+        // 压缩图片（宽 ≤ 1920, 高 ≤ 1080，根据大小自动选择质量）
+        let resizedImage = image.resizedToFit(maxWidth: 1920, maxHeight: 1080)
+        guard let imageData = resizedImage.adaptiveJPEGData() else {
             throw QiniuUploadError.imageCompressionFailed
         }
+        AppLogger.info("图片压缩完成: \(imageData.count / 1024)KB")
 
-        let fullKey = "\(AppConstants.qiniuKeyPrefix)/\(key)"
-        AppLogger.info("开始上传图片: key=\(fullKey), 大小=\(imageData.count / 1024)KB")
+        var lastError: Error?
 
-        // 构建 multipart/form-data
+        for attempt in 1...Self.maxRetries {
+            do {
+                AppLogger.debug("第 \(attempt) 次尝试上传")
+                progress?(0)
+
+                // 获取 Token（使用缓存，失败时清除重试）
+                let token: String
+                do {
+                    token = try await fetchToken()
+                } catch {
+                    invalidateToken()
+                    throw error
+                }
+
+                // 带超时的上传
+                let returnedKey = try await withThrowingTaskGroup(of: String.self) { group in
+                    group.addTask {
+                        try await self.doUpload(
+                            imageData: imageData,
+                            key: fullKey,
+                            token: token,
+                            progress: progress
+                        )
+                    }
+                    group.addTask {
+                        try await Task.sleep(for: .seconds(Self.uploadTimeout))
+                        throw QiniuUploadError.uploadTimeout
+                    }
+
+                    guard let result = try await group.next() else {
+                        throw QiniuUploadError.uploadFailed(detail: "上传任务异常终止")
+                    }
+                    group.cancelAll()
+                    return result
+                }
+
+                // 上传成功，返回相对 key（不含域名前缀）
+                AppLogger.info("上传成功，key: \(returnedKey)")
+                progress?(1.0)
+                return returnedKey
+
+            } catch {
+                lastError = error
+                AppLogger.error("上传失败（第 \(attempt)/\(Self.maxRetries) 次）: \(error.localizedDescription)")
+
+                // 上传失败可能是 Token 过期，清除缓存
+                if attempt == 1 {
+                    invalidateToken()
+                }
+
+                if attempt < Self.maxRetries {
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
+        }
+
+        throw lastError ?? QiniuUploadError.uploadFailed(detail: "已重试 \(Self.maxRetries) 次")
+    }
+
+    /// 执行单次上传
+    private func doUpload(imageData: Data, key: String, token: String, progress: ProgressHandler?) async throws -> String {
         let boundary = "Boundary-\(UUID().uuidString)"
         var body = Data()
 
-        // token 字段
         body.appendMultipartField(name: "token", value: token, boundary: boundary)
-        // key 字段
-        body.appendMultipartField(name: "key", value: fullKey, boundary: boundary)
-        // file 字段
-        body.appendMultipartFile(name: "file", filename: "\(key).\(fileExtension)", mimeType: mimeType, data: imageData, boundary: boundary)
+        body.appendMultipartField(name: "key", value: key, boundary: boundary)
+        body.appendMultipartFile(name: "file", filename: "\(key).jpg", mimeType: "image/jpeg", data: imageData, boundary: boundary)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         var request = URLRequest(url: AppConstants.qiniuUploadURL)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 120
+        request.timeoutInterval = Self.uploadTimeout
 
-        // 使用 URLSession upload 支持进度
         let delegate = UploadProgressDelegate(progressHandler: progress)
         let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
         defer { session.invalidateAndCancel() }
@@ -128,7 +207,6 @@ struct QiniuUploadService {
         let (data, response) = try await session.upload(for: request, from: body)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            AppLogger.error("七牛上传失败: 非 HTTP 响应")
             throw QiniuUploadError.uploadFailed(detail: "非 HTTP 响应")
         }
 
@@ -136,19 +214,15 @@ struct QiniuUploadService {
         AppLogger.info("七牛上传响应: HTTP \(httpResponse.statusCode), body: \(responseBody)")
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            AppLogger.error("七牛上传失败: HTTP \(httpResponse.statusCode)")
             throw QiniuUploadError.uploadFailed(detail: "HTTP \(httpResponse.statusCode): \(responseBody)")
         }
 
-        // 解析返回的 key
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let returnedKey = json["key"] as? String {
-            AppLogger.info("七牛上传成功: \(returnedKey)")
             return returnedKey
         }
 
-        AppLogger.info("七牛上传成功: \(fullKey)")
-        return fullKey
+        return key
     }
 }
 
@@ -177,6 +251,7 @@ enum QiniuUploadError: LocalizedError {
     case tokenFetchFailed
     case imageCompressionFailed
     case uploadFailed(detail: String = "")
+    case uploadTimeout
 
     var errorDescription: String? {
         switch self {
@@ -184,6 +259,7 @@ enum QiniuUploadError: LocalizedError {
         case .imageCompressionFailed: "图片压缩失败"
         case .uploadFailed(let detail):
             detail.isEmpty ? "图片上传失败" : "图片上传失败: \(detail)"
+        case .uploadTimeout: "上传超时"
         }
     }
 }

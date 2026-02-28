@@ -14,15 +14,21 @@ final class InventoryViewModel {
 
     var clothingItems: [ClothingInventory] = []
     var locations: [String] = []
-    var typeOptions: [String] = []
+    var allTypeOptions: [String] = [] // 全部类型（初始加载获取）
     var statistics = OverviewStatistics()
 
     // MARK: - 筛选
 
-    var selectedLocation: String? {
-        didSet { Task { await onLocationChanged() } }
-    }
+    var selectedLocation: String?
     var selectedType: String?
+
+    /// 当前筛选变更任务（用于取消上一次请求）
+    private var filterTask: Task<Void, Never>?
+
+    /// 当前是否有筛选条件
+    private var hasFilter: Bool {
+        selectedLocation != nil || selectedType != nil
+    }
 
     // MARK: - 分页
 
@@ -42,16 +48,24 @@ final class InventoryViewModel {
 
     private let clothingService = ClothingService()
     private let statisticsService = StatisticsService()
+    private let dictService = DictService()
+    private var notificationObserver: Any?
 
     init() {
         // 监听 Realtime 数据变更通知
-        NotificationCenter.default.addObserver(
+        notificationObserver = NotificationCenter.default.addObserver(
             forName: .clothingDataChanged,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
             Task { await self.refresh() }
+        }
+    }
+
+    deinit {
+        if let observer = notificationObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 
@@ -65,11 +79,13 @@ final class InventoryViewModel {
             async let locationsTask = clothingService.getAvailableLocations()
             async let itemsTask = clothingService.getList(page: 0)
             async let statsTask = statisticsService.getOverviewStatistics()
+            async let typesTask = dictService.getByCategory("clothing_type")
 
             locations = try await locationsTask
             let items = try await itemsTask
             clothingItems = items
             statistics = try await statsTask
+            allTypeOptions = try await typesTask.map(\.name).sorted()
             hasMorePages = items.count >= AppConstants.defaultPageSize
         } catch {
             showError("加载数据失败: \(error.localizedDescription)")
@@ -79,8 +95,8 @@ final class InventoryViewModel {
 
     /// 加载更多（分页预加载）
     func loadMoreIfNeeded(currentItem: ClothingInventory) async {
-        // 仅在无筛选时支持分页
-        guard selectedLocation == nil, hasMorePages, !isLoadingMore else { return }
+        // 筛选模式不分页
+        guard !hasFilter, hasMorePages, !isLoadingMore else { return }
 
         // 到达 80% 位置时触发
         let threshold = Int(Double(clothingItems.count) * 0.8)
@@ -92,7 +108,6 @@ final class InventoryViewModel {
         do {
             let newItems = try await clothingService.getList(page: nextPage)
             if !newItems.isEmpty {
-                // 去重后追加
                 let existingIds = Set(clothingItems.map(\.id))
                 let uniqueItems = newItems.filter { !existingIds.contains($0.id) }
                 clothingItems.append(contentsOf: uniqueItems)
@@ -113,20 +128,14 @@ final class InventoryViewModel {
         currentPage = 0
         hasMorePages = true
         do {
-            if let location = selectedLocation {
-                if let type = selectedType {
-                    clothingItems = try await clothingService.getByLocationAndType(location: location, type: type)
-                } else {
-                    clothingItems = try await clothingService.getByLocation(location)
-                }
-                statistics = try await statisticsService.getOverviewStatistics(location: location)
-            } else {
-                let items = try await clothingService.getList(page: 0)
-                clothingItems = items
-                statistics = try await statisticsService.getOverviewStatistics()
-                hasMorePages = items.count >= AppConstants.defaultPageSize
-            }
+            clothingItems = try await fetchFilteredItems()
+            statistics = try await statisticsService.getOverviewStatistics(
+                location: selectedLocation
+            )
             locations = try await clothingService.getAvailableLocations()
+            if !hasFilter {
+                hasMorePages = clothingItems.count >= AppConstants.defaultPageSize
+            }
         } catch {
             showError("刷新失败")
         }
@@ -135,22 +144,23 @@ final class InventoryViewModel {
 
     // MARK: - 筛选操作
 
-    private func onLocationChanged() async {
-        selectedType = nil
+    /// 筛选条件变更时调用（由 View 层 .onChange 触发，带防抖取消）
+    func onFilterChanged() {
+        filterTask?.cancel()
+        filterTask = Task { await performFilter() }
+    }
+
+    private func performFilter() async {
         isLoading = true
         currentPage = 0
-        hasMorePages = false // 筛选模式不分页
+        hasMorePages = false
         do {
-            if let location = selectedLocation {
-                clothingItems = try await clothingService.getByLocation(location)
-                statistics = try await statisticsService.getOverviewStatistics(location: location)
-                typeOptions = Array(Set(clothingItems.map(\.type))).sorted()
-            } else {
-                let items = try await clothingService.getList(page: 0)
-                clothingItems = items
-                statistics = try await statisticsService.getOverviewStatistics()
-                typeOptions = []
-                hasMorePages = items.count >= AppConstants.defaultPageSize
+            clothingItems = try await fetchFilteredItems()
+            statistics = try await statisticsService.getOverviewStatistics(
+                location: selectedLocation
+            )
+            if !hasFilter {
+                hasMorePages = clothingItems.count >= AppConstants.defaultPageSize
             }
         } catch {
             showError("筛选失败")
@@ -158,22 +168,18 @@ final class InventoryViewModel {
         isLoading = false
     }
 
-    /// 按类型筛选
-    func filterByType(_ type: String?) async {
-        selectedType = type
-        guard let location = selectedLocation else { return }
-
-        isLoading = true
-        do {
-            if let type {
-                clothingItems = try await clothingService.getByLocationAndType(location: location, type: type)
-            } else {
-                clothingItems = try await clothingService.getByLocation(location)
-            }
-        } catch {
-            showError("筛选失败")
+    /// 根据当前筛选条件获取数据
+    private func fetchFilteredItems() async throws -> [ClothingInventory] {
+        switch (selectedLocation, selectedType) {
+        case let (location?, type?):
+            return try await clothingService.getByLocationAndType(location: location, type: type)
+        case let (location?, nil):
+            return try await clothingService.getByLocation(location)
+        case let (nil, type?):
+            return try await clothingService.getByType(type)
+        case (nil, nil):
+            return try await clothingService.getList(page: 0)
         }
-        isLoading = false
     }
 
     // MARK: - 私有

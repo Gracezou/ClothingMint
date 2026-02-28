@@ -50,6 +50,9 @@ struct MainTabView: View {
             }
             await realtimeService.startListening()
         }
+        .onDisappear {
+            Task { await realtimeService.stopListening() }
+        }
     }
 }
 

@@ -66,6 +66,18 @@ struct ClothingRepository {
             .value
     }
 
+    /// 按类型筛选（排除已售）
+    func getByType(_ type: String) async throws -> [ClothingInventory] {
+        try await client
+            .from(table)
+            .select()
+            .eq("type", value: type)
+            .is("stock_out_date", value: nil)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+    }
+
     /// 按位置 + 类型筛选（排除已售）
     func getByLocationAndType(location: String, type: String) async throws -> [ClothingInventory] {
         try await client

@@ -11,6 +11,7 @@ import SwiftUI
 struct BarcodePreviewView: View {
     let code: String
     @Environment(\.dismiss) private var dismiss
+    @State private var showPrinter = false
 
     var body: some View {
         NavigationStack {
@@ -58,6 +59,23 @@ struct BarcodePreviewView: View {
                     // 操作按钮
                     VStack(spacing: 12) {
                         Button {
+                            showPrinter = true
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "printer.fill")
+                                Text("打印标签")
+                                    .font(.headline)
+                            }
+                            .foregroundStyle(Color.mintPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(Color.mintPrimary, lineWidth: 1.5)
+                            )
+                        }
+
+                        Button {
                             dismiss()
                         } label: {
                             Text("完成")
@@ -80,7 +98,23 @@ struct BarcodePreviewView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showPrinter) {
+                PrinterScanView(clothing: makePrintClothing())
+            }
         }
+    }
+
+    /// 构造用于打印的最小 ClothingInventory
+    private func makePrintClothing() -> ClothingInventory {
+        let now = DateFormatters.iso8601.string(from: .now)
+        return ClothingInventory(
+            id: "", code: code, merchantId: nil,
+            size: "", color: "", type: "", location: "",
+            photoUrl: nil, price: 0, description: nil,
+            stockInDate: now, stockOutDate: nil, xianyuLink: nil,
+            isReturned: false, returnTime: nil,
+            createdAt: now, updatedAt: now, userId: nil
+        )
     }
 }
 

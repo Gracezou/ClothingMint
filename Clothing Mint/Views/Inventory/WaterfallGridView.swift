@@ -60,12 +60,13 @@ struct ClothingCard: View {
             // 图片
             ZStack(alignment: .topTrailing) {
                 CachedAsyncImage(url: item.thumbnailUrl, placeholder: "tshirt")
-                    .frame(height: 160)
-                    .clipped()
 
                 StatusBadge(isListed: item.isListed)
                     .padding(8)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 160)
+            .clipped()
 
             // 信息
             VStack(alignment: .leading, spacing: 4) {
@@ -96,5 +97,6 @@ struct ClothingCard: View {
         .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+        .drawingGroup()
     }
 }

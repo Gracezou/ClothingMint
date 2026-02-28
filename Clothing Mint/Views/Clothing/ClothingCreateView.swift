@@ -49,6 +49,23 @@ struct ClothingCreateView: View {
                     .frame(maxWidth: 600) // iPad 限宽
                     .frame(maxWidth: .infinity) // 居中
                 }
+
+                // 保存 loading 遮罩
+                if viewModel.isSaving {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text("正在入库...")
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(32)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
             }
             .navigationTitle("新增服装")
             .navigationBarTitleDisplayMode(.inline)
@@ -73,7 +90,9 @@ struct ClothingCreateView: View {
                 ImagePickerView(sourceType: imageSource, selectedImage: $viewModel.selectedImage)
                     .ignoresSafeArea()
             }
-            .sheet(isPresented: $showBarcodePreview) {
+            .sheet(isPresented: $showBarcodePreview, onDismiss: {
+                viewModel.resetForm()
+            }) {
                 BarcodePreviewView(code: viewModel.savedBarcode ?? viewModel.code)
             }
             .task {
@@ -226,7 +245,7 @@ struct ClothingCreateView: View {
                     Text("价格")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(width: 70, alignment: .leading)
+                        .frame(width: 80, alignment: .leading)
 
                     HStack(spacing: 4) {
                         Text("¥")
@@ -243,10 +262,13 @@ struct ClothingCreateView: View {
                     Text("入库日期")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(width: 70, alignment: .leading)
+                        .frame(width: 80, alignment: .leading)
 
                     DatePicker("", selection: $viewModel.stockInDate, displayedComponents: .date)
                         .labelsHidden()
+                        .environment(\.locale, Locale(identifier: "zh_CN"))
+
+                    Spacer()
                 }
 
                 Divider()
@@ -256,7 +278,7 @@ struct ClothingCreateView: View {
                     Text("描述")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(width: 70, alignment: .leading)
+                        .frame(width: 80, alignment: .leading)
                         .padding(.top, 8)
 
                     TextField("可选描述", text: $viewModel.description, axis: .vertical)
@@ -318,11 +340,21 @@ struct ClothingCreateView: View {
             Text(title)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .frame(width: 70, alignment: .leading)
+                .frame(width: 80, alignment: .leading)
 
             if options.isEmpty {
-                ProgressView()
-                    .scaleEffect(0.8)
+                if viewModel.loadOptionsFailed {
+                    Button {
+                        Task { await viewModel.loadOptions() }
+                    } label: {
+                        Label("加载失败，点击重试", systemImage: "arrow.clockwise")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                } else {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
             } else {
                 Picker(title, selection: selection) {
                     Text("请选择").tag("")

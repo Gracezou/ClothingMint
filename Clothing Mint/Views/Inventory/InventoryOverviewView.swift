@@ -40,11 +40,6 @@ struct InventoryOverviewView: View {
                             )
                             .padding(.horizontal, 16)
 
-                            // 类型标签（选中位置后显示）
-                            if !viewModel.typeOptions.isEmpty {
-                                typeTagsBar
-                            }
-
                             // 瀑布流网格
                             if viewModel.clothingItems.isEmpty && !viewModel.isLoading {
                                 emptyState
@@ -123,6 +118,12 @@ struct InventoryOverviewView: View {
                     await viewModel.loadInitialData()
                 }
             }
+            .onChange(of: viewModel.selectedLocation) { _, _ in
+                viewModel.onFilterChanged()
+            }
+            .onChange(of: viewModel.selectedType) { _, _ in
+                viewModel.onFilterChanged()
+            }
             .onChange(of: appState.deepLinkRoute) { _, route in
                 if let route {
                     navigationPath.append(route)
@@ -142,6 +143,12 @@ struct InventoryOverviewView: View {
                 selection: $viewModel.selectedLocation
             )
 
+            DropdownPicker(
+                title: "选择类型",
+                options: viewModel.allTypeOptions,
+                selection: $viewModel.selectedType
+            )
+
             Spacer()
 
             Text("\(viewModel.clothingItems.count) 件")
@@ -149,38 +156,6 @@ struct InventoryOverviewView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
-    }
-
-    private var typeTagsBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // 全部标签
-                typeTag(label: "全部", isSelected: viewModel.selectedType == nil) {
-                    Task { await viewModel.filterByType(nil) }
-                }
-
-                ForEach(viewModel.typeOptions, id: \.self) { type in
-                    typeTag(label: type, isSelected: viewModel.selectedType == type) {
-                        Task { await viewModel.filterByType(type) }
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-
-    private func typeTag(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(isSelected ? .white : .primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.mintPrimary : Color.gray.opacity(0.1))
-                )
-        }
     }
 
     private var emptyState: some View {

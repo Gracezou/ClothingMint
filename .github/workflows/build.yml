@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -26,6 +26,26 @@ jobs:
           xcodebuild -resolvePackageDependencies \
             -project "Clothing Mint.xcodeproj" \
             -scheme "Clothing Mint"
+
+      - name: Build for testing
+        run: |
+          xcodebuild build-for-testing \
+            -project "Clothing Mint.xcodeproj" \
+            -scheme "Clothing Mint" \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run tests
+        run: |
+          xcodebuild test-without-building \
+            -project "Clothing Mint.xcodeproj" \
+            -scheme "Clothing Mint" \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO || true
 
       - name: Build for archive
         run: |

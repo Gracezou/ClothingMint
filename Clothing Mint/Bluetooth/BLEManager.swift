@@ -43,8 +43,11 @@ enum BLEConnectionState {
     private var connectedPeripheral: CBPeripheral?
     private var writeCharacteristic: CBCharacteristic?
 
-    /// 数据发送完成回调
-    private var sendCompletion: ((Bool) -> Void)?
+    /// 写入完成 continuation
+    private var writeContinuation: CheckedContinuation<Void, Error>?
+    /// 待发送的数据块
+    private var pendingChunks: [Data] = []
+    private var currentChunkIndex = 0
 
     override init() {
         super.init()
@@ -80,9 +83,25 @@ enum BLEConnectionState {
 
     // MARK: - 连接/断开
 
+    /// 连接超时时间（秒）
+    private static let connectionTimeout: TimeInterval = 10
+    private var connectionTimeoutWork: DispatchWorkItem?
+
     func connect(to device: PrinterDevice) {
         stopScan()
         connectionState = .connecting
+
+        // 设置连接超时
+        connectionTimeoutWork?.cancel()
+        let timeoutWork = DispatchWorkItem { [weak self] in
+            guard let self, case .connecting = self.connectionState else { return }
+            self.centralManager?.cancelPeripheralConnection(device.peripheral)
+            self.connectionState = .error("连接超时")
+            AppLogger.error("蓝牙连接超时: \(device.name)")
+        }
+        connectionTimeoutWork = timeoutWork
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.connectionTimeout, execute: timeoutWork)
+
         centralManager?.connect(device.peripheral, options: nil)
     }
 
@@ -95,7 +114,7 @@ enum BLEConnectionState {
 
     // MARK: - 发送数据
 
-    /// 发送数据到已连接设备（20 字节分块）
+    /// 发送数据到已连接设备（20 字节分块，使用 didWriteValueFor 回调确认）
     func sendData(_ data: Data, completion: @escaping (Bool) -> Void) {
         guard let peripheral = connectedPeripheral,
               let characteristic = writeCharacteristic else {
@@ -103,19 +122,30 @@ enum BLEConnectionState {
             return
         }
 
+        // 分块
         let chunkSize = 20
+        var chunks: [Data] = []
         var offset = 0
-
         while offset < data.count {
             let end = min(offset + chunkSize, data.count)
-            let chunk = data.subdata(in: offset..<end)
-            peripheral.writeValue(chunk, for: characteristic, type: .withResponse)
+            chunks.append(data.subdata(in: offset..<end))
             offset = end
         }
 
-        // 延迟回调，等待蓝牙传输完成
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            completion(true)
+        Task { @MainActor in
+            do {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    self.pendingChunks = chunks
+                    self.currentChunkIndex = 0
+                    self.writeContinuation = continuation
+                    // 发送第一个块
+                    peripheral.writeValue(chunks[0], for: characteristic, type: .withResponse)
+                }
+                completion(true)
+            } catch {
+                AppLogger.error("蓝牙写入失败: \(error.localizedDescription)")
+                completion(false)
+            }
         }
     }
 
@@ -160,6 +190,8 @@ extension BLEManager: CBCentralManagerDelegate {
     nonisolated func centralManager(_ central: CBCentralManager,
                                      didConnect peripheral: CBPeripheral) {
         Task { @MainActor in
+            connectionTimeoutWork?.cancel()
+            connectionTimeoutWork = nil
             connectedPeripheral = peripheral
             connectedDevice = discoveredDevices.first(where: { $0.peripheral == peripheral })
             connectionState = .connected
@@ -173,6 +205,8 @@ extension BLEManager: CBCentralManagerDelegate {
                                      didFailToConnect peripheral: CBPeripheral,
                                      error: Error?) {
         Task { @MainActor in
+            connectionTimeoutWork?.cancel()
+            connectionTimeoutWork = nil
             connectionState = .error("连接失败: \(error?.localizedDescription ?? "未知错误")")
             AppLogger.error("蓝牙连接失败: \(error?.localizedDescription ?? "")")
         }
@@ -212,6 +246,32 @@ extension BLEManager: CBPeripheralDelegate {
                     AppLogger.info("发现写入特征: \(characteristic.uuid)")
                     return
                 }
+            }
+        }
+    }
+
+    nonisolated func peripheral(_ peripheral: CBPeripheral,
+                                 didWriteValueFor characteristic: CBCharacteristic,
+                                 error: Error?) {
+        Task { @MainActor in
+            if let error {
+                let continuation = writeContinuation
+                writeContinuation = nil
+                pendingChunks = []
+                continuation?.resume(throwing: error)
+                return
+            }
+
+            currentChunkIndex += 1
+            if currentChunkIndex < pendingChunks.count {
+                // 发送下一个块
+                peripheral.writeValue(pendingChunks[currentChunkIndex], for: characteristic, type: .withResponse)
+            } else {
+                // 所有块发送完成
+                let continuation = writeContinuation
+                writeContinuation = nil
+                pendingChunks = []
+                continuation?.resume()
             }
         }
     }

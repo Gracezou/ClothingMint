@@ -21,13 +21,13 @@ enum AppConstants: Sendable {
     // MARK: - 七牛云
 
     /// 七牛上传 Token 服务器地址
-    static let qiniuTokenURL = URL(string: "http://1.92.84.13:5177/v1/qiniu/token")!
+    static let qiniuTokenURL = URL(string: "http://124.71.145.245:5177/api/token")!
 
     /// 七牛 CDN 域名
-    static let qiniuCDNDomain = "http://qiniu.daxiaoxiang.com"
+    static let qiniuCDNDomain = "http://qiniu2.daxiaoxiang.com"
 
-    /// 七牛上传地址（华东区域）
-    static let qiniuUploadURL = URL(string: "https://up.qiniup.com")!
+    /// 七牛上传地址（东南亚区域）
+    static let qiniuUploadURL = URL(string: "https://up-as0.qiniup.com")!
 
     /// 七牛上传 Key 前缀
     static let qiniuKeyPrefix = "sampleClothing"
