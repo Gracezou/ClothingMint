@@ -122,7 +122,8 @@ final class AuthViewModel {
             showSuccess("重置邮件已发送，请查收邮箱")
         } catch {
             isLoading = false
-            showError("发送失败，请重试")
+            AppLogger.error("重置密码失败: \(error)")
+            showError("发送失败: \(error.localizedDescription)")
         }
     }
 
