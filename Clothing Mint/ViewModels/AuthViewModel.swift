@@ -108,6 +108,24 @@ final class AuthViewModel {
         }
     }
 
+    /// 发送密码重置邮件
+    func resetPassword() async {
+        guard Validators.isValidEmail(email) else {
+            showError("请输入有效的邮箱地址")
+            return
+        }
+
+        isLoading = true
+        do {
+            try await authService.resetPassword(email: email)
+            isLoading = false
+            showSuccess("重置邮件已发送，请查收邮箱")
+        } catch {
+            isLoading = false
+            showError("发送失败，请重试")
+        }
+    }
+
     /// 清空表单
     func clearForm() {
         email = ""

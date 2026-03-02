@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clothing Mint - 邮箱验证</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #e0f7ef 0%, #b2dfdb 100%);
+            color: #333;
+        }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        h1 { font-size: 22px; margin-bottom: 12px; color: #1a1a1a; }
+        p { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 20px; }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #4dc9a0, #36b389);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .btn:hover { transform: scale(1.03); }
+        .status { margin-top: 16px; font-size: 14px; color: #999; }
+        .error { color: #e53935; }
+        .success { color: #4dc9a0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon" id="icon">&#9203;</div>
+        <h1 id="title">正在验证邮箱...</h1>
+        <p id="message">请稍候，正在确认您的邮箱地址。</p>
+        <a class="btn" id="action" style="display:none;" href="#">打开 Clothing Mint</a>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://wyqzgryuxyfrsenyupls.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cXpncnl1eHlmcnNlbnl1cGxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODg1NzIsImV4cCI6MjA1MzU2NDU3Mn0.fZSF9D7ihMHdqhOtDiWA14F2VghrMVpcekNOxe3Nvls';
+
+        const icon = document.getElementById('icon');
+        const title = document.getElementById('title');
+        const message = document.getElementById('message');
+        const action = document.getElementById('action');
+        const status = document.getElementById('status');
+
+        async function verifyEmail() {
+            // Supabase 回调会把 token 放在 URL hash 中
+            // 格式: #access_token=xxx&type=signup&...
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            const type = params.get('type');
+
+            if (!accessToken) {
+                showError('无效的验证链接', '链接中缺少必要参数，请检查邮件中的链接是否完整。');
+                return;
+            }
+
+            try {
+                const { createClient } = supabase;
+                const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data, error } = await client.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+
+                if (error) throw error;
+
+                showSuccess();
+            } catch (err) {
+                showError('验证失败', err.message || '请重新注册或联系支持。');
+            }
+        }
+
+        function showSuccess() {
+            icon.textContent = '\u2705';
+            title.textContent = '邮箱验证成功!';
+            message.textContent = '您的邮箱已确认，现在可以登录 Clothing Mint 了。';
+            action.style.display = 'inline-block';
+            action.href = 'clothingmint://auth/confirmed';
+            action.textContent = '打开 App 登录';
+            status.textContent = '如果 App 没有自动打开，请手动打开 Clothing Mint 并登录。';
+            status.className = 'status success';
+        }
+
+        function showError(titleText, msg) {
+            icon.textContent = '\u274C';
+            title.textContent = titleText;
+            message.textContent = msg;
+            status.className = 'status error';
+        }
+
+        verifyEmail();
+    </script>
+</body>
+</html>

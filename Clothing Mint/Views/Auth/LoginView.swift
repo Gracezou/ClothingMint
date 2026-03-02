@@ -35,6 +35,9 @@ struct LoginView: View {
                         // 登录表单
                         formSection
 
+                        // 忘记密码
+                        forgotPasswordLink
+
                         // 登录按钮
                         loginButton
 
@@ -141,6 +144,20 @@ struct LoginView: View {
         }
         .disabled(viewModel.isLoading || !viewModel.isLoginFormValid)
         .opacity(viewModel.isLoginFormValid ? 1 : 0.6)
+    }
+
+    private var forgotPasswordLink: some View {
+        HStack {
+            Spacer()
+            Button {
+                Task { await viewModel.resetPassword() }
+            } label: {
+                Text("忘记密码？")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .disabled(viewModel.isLoading)
+        }
     }
 
     private var signUpLink: some View {

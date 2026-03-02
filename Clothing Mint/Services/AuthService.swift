@@ -21,8 +21,21 @@ struct AuthService {
 
     /// 注册新用户
     func signUp(email: String, password: String) async throws {
-        try await client.auth.signUp(email: email, password: password)
+        try await client.auth.signUp(
+            email: email,
+            password: password,
+            redirectTo: URL(string: "https://gracezou.github.io/ClothingMint/confirm")
+        )
         AppLogger.info("用户注册成功: \(email)")
+    }
+
+    /// 发送重置密码邮件
+    func resetPassword(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(
+            email,
+            redirectTo: URL(string: "https://gracezou.github.io/ClothingMint/reset-password")
+        )
+        AppLogger.info("已发送密码重置邮件: \(email)")
     }
 
     /// 退出登录

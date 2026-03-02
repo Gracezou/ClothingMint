@@ -27,7 +27,10 @@ struct Clothing_MintApp: App {
     }
 
     /// 处理 Deep Link
-    /// 支持格式：clothingmint://detail/{id} — 跳转服装详情
+    /// 支持格式：
+    /// - clothingmint://detail/{id} — 跳转服装详情
+    /// - clothingmint://auth/confirmed — 邮箱验证成功
+    /// - clothingmint://auth/password-reset — 密码重置成功
     private func handleDeepLink(_ url: URL) {
         guard url.scheme == "clothingmint" else { return }
 
@@ -36,6 +39,13 @@ struct Clothing_MintApp: App {
             if let id = url.pathComponents.last, id != "/" {
                 appState.deepLinkRoute = .clothingDetail(id: id)
                 AppLogger.info("Deep Link: 跳转详情 \(id)")
+            }
+        case "auth":
+            let action = url.pathComponents.last
+            if action == "confirmed" {
+                AppLogger.info("Deep Link: 邮箱验证成功")
+            } else if action == "password-reset" {
+                AppLogger.info("Deep Link: 密码重置成功")
             }
         default:
             AppLogger.debug("未知 Deep Link: \(url)")
