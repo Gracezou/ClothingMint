@@ -67,28 +67,35 @@
         const status = document.getElementById('status');
 
         async function verifyEmail() {
-            // Supabase 回调会把 token 放在 URL hash 中
-            // 格式: #access_token=xxx&type=signup&...
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-            const type = params.get('type');
+            const { createClient } = supabase;
+            const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (!accessToken) {
-                showError('无效的验证链接', '链接中缺少必要参数，请检查邮件中的链接是否完整。');
-                return;
-            }
+            // PKCE 流程：URL 带 ?code=xxx
+            const queryParams = new URLSearchParams(window.location.search);
+            const code = queryParams.get('code');
+
+            // 隐式流程：URL 带 #access_token=xxx
+            const hash = window.location.hash.substring(1);
+            const hashParams = new URLSearchParams(hash);
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
 
             try {
-                const { createClient } = supabase;
-                const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                const { data, error } = await client.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                });
-
-                if (error) throw error;
+                if (code) {
+                    // PKCE 流程：用 code 换 session
+                    const { error } = await client.auth.exchangeCodeForSession(code);
+                    if (error) throw error;
+                } else if (accessToken) {
+                    // 隐式流程：直接设置 session
+                    const { error } = await client.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+                    if (error) throw error;
+                } else {
+                    showError('无效的验证链接', '链接中缺少必要参数，请检查邮件中的链接是否完整。');
+                    return;
+                }
 
                 showSuccess();
             } catch (err) {
